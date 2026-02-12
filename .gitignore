@@ -1,0 +1,10 @@
+# Файлы, игнорируемые по умолчанию
+/shelf/
+/.idea/workspace.xml
+# Environment-dependent path to Maven home directory
+/mavenHomeManager.xml
+/.gigaide
+/.idea
+/.venv
+.iml
+.xml
