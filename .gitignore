@@ -6,5 +6,5 @@
 /.gigaide
 /.idea
 /.venv
-.iml
-.xml
+/*.iml
+/.xml
