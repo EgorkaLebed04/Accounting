@@ -1,20 +1,25 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models.models import Base, Employee
+from application.DB.people import get_employees, add_employee
+from application.salary import calculate_salary
+from models.models import Base
 from config.db_config import DB_CONFIG
 import logging
-import psycopg2
-from psycopg2 import OperationalError
-import re
 
 def init_db():
     try:
-        engine = create_engine(
+        # Добавляем параметр для автоматического создания БД
+        connection_string = (
             f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
             f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
         )
 
+        engine = create_engine(connection_string)
+
+        # Создаем все таблицы в БД
         Base.metadata.create_all(engine)
+
+        # Создаем фабрику сессий
         Session = sessionmaker(bind=engine)
         return Session()
 
@@ -22,76 +27,15 @@ def init_db():
         logging.error(f"Ошибка подключения к БД: {str(e)}")
         raise
 
-def validate_email(email):
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
-
-def validate_phone(phone):
-    pattern = r'^(\+7|8)?[\s-]?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}$'
-    return re.match(pattern, phone) is not None
-
-def add_employee(session):
-    print("\nДобавление нового сотрудника")
-    last_name = input("Фамилия: ").strip()
-    first_name = input("Имя: ").strip()
-    surname = input("Отчество: ").strip()
-    organization = input("Организация: ").strip()
-    position = input("Должность: ").strip()
-    phone = input("Телефон: ").strip()
-    email = input("Email: ").strip()
-
-    if not last_name or not first_name:
-        print("Ошибка: обязательно заполните поля Фамилия и Имя")
-        return
-
-    if email and not validate_email(email):
-        print("Ошибка: неверный формат email")
-        return
-
-    if phone and not validate_phone(phone):
-        print("Ошибка: неверный формат телефона")
-        return
-
-    try:
-        new_employee = Employee(
-            last_name=last_name,
-            first_name=first_name,
-            surname=surname,
-            organization=organization,
-            position=position,
-            phone=phone,
-            email=email
-        )
-        session.add(new_employee)
-        session.commit()
-        print("Сотрудник успешно добавлен!")
-
-    except Exception as e:
-        session.rollback()
-        print(f"Произошла ошибка: {str(e)}")
-
-def show_employees(session):
-    print("\nСписок сотрудников:")
-    employees = session.query(Employee).all()
-
-    for emp in employees:
-        print(f"ID: {emp.employee_id}")
-        print(f"ФИО: {emp.last_name} {emp.first_name} {emp.surname}")
-        print(f"Организация: {emp.organization}")
-        print(f"Должность: {emp.position}")
-        print(f"Телефон: {emp.phone}")
-        print(f"Email: {emp.email}")
-        print("-" * 40)
-
 def main():
-    global session
+    session = init_db()
     try:
-        session = init_db()
         while True:
             print("\nСистема учета сотрудников")
             print("1. Добавить сотрудника")
             print("2. Показать список сотрудников")
-            print("3. Выход")
+            print("3. Посчитать зарплату сотрудника")
+            print("4. Выход")
 
             choice = input("Выберите действие: ")
 
@@ -99,9 +43,13 @@ def main():
                 add_employee(session)
 
             elif choice == '2':
-                show_employees(session)
+                get_employees(session)
 
-            elif choice == '3':
+            elif choice=='3':
+                employee_id = input("Введите ID сотрудника для расчетов ")
+                calculate_salary(session,int(employee_id))
+
+            elif choice == '4':
                 print("До свидания!")
                 break
 

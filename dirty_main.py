@@ -1,5 +1,5 @@
-def start():
-    pass
+from utils.decorators import *
 
-def stop():
+@date_decorator
+def start():
     pass
